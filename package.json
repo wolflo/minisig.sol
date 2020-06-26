@@ -1,0 +1,22 @@
+{
+  "name": "minisig-buidler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx buidler compile",
+    "test": "npx buidler test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomiclabs/buidler": "^1.3.8",
+    "buidler-ethers-v5": "^0.2.2",
+    "chai": "^4.2.0",
+    "ethers": "^5.0.2"
+  },
+  "dependencies": {
+    "bn.js": "^5.1.2"
+  }
+}
