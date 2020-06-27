@@ -1,7 +1,9 @@
 const { expect } = require('chai');
-const eth = require('ethers'); // wtf buidler-ethers?
+const ethers = require('ethers'); // wtf buidler-ethers?
 const BN = require('bn.js');
 
+const Minisig = require('../artifacts/Minisig.json');
+const Target = require('../artifacts/Target.json');
 const getWallets = require('../scripts/wallets.js');
 const C = require('./utils/constants.js');
 
@@ -13,15 +15,31 @@ describe("Minisig runtime", () => {
   const m = 2; // m of n multisig
   const n = 3;
 
+  before("get provider", () => {
+    this.provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+    this.sender = this.provider.getSigner();
+
+    this.msigFactory = new ethers.ContractFactory(
+      new ethers.utils.Interface(Minisig.abi),
+      Minisig.bytecode,
+      this.sender
+    );
+    this.targFactory = new ethers.ContractFactory(
+      new ethers.utils.Interface(Target.abi),
+      Target.bytecode,
+      this.sender
+    );
+  });
+
   beforeEach("deploy minisig", async () => {
     usrs = sortByAddr(getWallets(n));
     usrAddrs = usrs.map(u => u.address);
 
-    const msigFactory = await ethers.getContractFactory("Minisig");
-    msig = await msigFactory.deploy(m, usrAddrs);
+    // const msigFactory = await ethers.getContractFactory("Minisig");
+    // const targFactory = await ethers.getContractFactory("Target");
+    msig = await this.msigFactory.deploy(m, usrAddrs);
+    targ = await this.targFactory.deploy();
 
-    const targFactory = await ethers.getContractFactory("Target");
-    targ = await targFactory.deploy();
   });
 
   describe("getters", () => {
@@ -39,20 +57,25 @@ describe("Minisig runtime", () => {
     });
   });
 
-  describe("execute()", () => {
+  // TODO:
+  // - typescript
+  // - provider versatility / get rid of buidler-ethers
+  // - encode digest in js
+  describe("execute", () => {
     it("works", async () => {
-      // const val = eth.utils.parseEther('1');
-      const val = 0;
+      const val = ethers.utils.parseEther('1');
+      // const val = 0;
 
       // get digest
       const digest = await msig.encode(0, val, targ.address, '0x');
-      console.log('digest', digest);
 
       // sign
-      const keys = usrs.map(u => new eth.utils.SigningKey(u.privateKey));
-      const sigs = keys.map(k => eth.utils.joinSignature(k.signDigest(digest)));
-      const allSigs = eth.utils.hexlify(eth.utils.concat(sigs));
-      await msig.execute(0, val, targ.address, '0x', allSigs)
+      const keys = usrs.map(u => new ethers.utils.SigningKey(u.privateKey));
+      const sigs = keys.map(k => ethers.utils.joinSignature(k.signDigest(digest)));
+      const allSigs = ethers.utils.hexlify(ethers.utils.concat(sigs));
+      await msig.execute(0, val, targ.address, '0x', allSigs, {value: val});
+      // console.log('bal', await targ.);
+      expect((await msig.nonce()).toString()).to.eq('1');
     });
   });
 });

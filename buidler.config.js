@@ -1,4 +1,4 @@
-usePlugin('buidler-ethers-v5');
+// usePlugin('buidler-ethers-v5');
 
 const getWallets = require('./scripts/wallets.js');
 
