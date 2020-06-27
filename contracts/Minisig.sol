@@ -56,7 +56,6 @@ contract Minisig {
 
     function execute(
         CallType _callType,
-        uint256 _nonce,
         uint256 _value,
         address _target,
         bytes calldata _data,
@@ -70,18 +69,19 @@ contract Minisig {
         require(_sigs.length >= uint256(threshold) * 65, "sigs-invalid-length");
 
         // update nonce
-        require(_nonce == nonce, "invalid-nonce");
-        uint256 newNonce = nonce + 1;
+        uint256 origNonce = nonce;
+        uint256 newNonce = origNonce + 1;
         nonce = newNonce;
 
         // signed message hash
         bytes32 digest = keccak256(abi.encodePacked(
+            // byte(0x19), byte(0x01)
             "\x19\x01",
             DOMAIN_SEPARATOR,
             keccak256(abi.encode(
                 EXECUTE_TYPEHASH,
                 _callType,
-                _nonce,
+                origNonce,
                 _value,
                 _target,
                 keccak256(_data)
@@ -96,7 +96,10 @@ contract Minisig {
         uint256 signerIdx = 0;
         for (uint256 i = 0; i < threshold; i++) {
             // sig should be 65 bytes total, {32 byte r}{32 byte s}{1 byte v}
-            address addr = ecrecover(digest, uint8(_sigs[sigIdx + 65]), _sigs[sigIdx], _sigs[sigIdx + 32]);
+            uint8 v = uint8(_sigs[sigIdx+64]);
+            bytes32 r = abi.decode(_sigs[sigIdx:sigIdx+32], (bytes32));
+            bytes32 s = abi.decode(_sigs[sigIdx+32:sigIdx+64], (bytes32));
+            address addr = ecrecover(digest, v, r, s);
             sigIdx += 65;
 
             // TODO lol
@@ -135,5 +138,29 @@ contract Minisig {
     // return signers array
     function allSigners() external view returns (address[] memory) {
         return signers;
+    }
+
+    //td remove
+    function encode(
+        CallType _callType,
+        uint256 _value,
+        address _target,
+        bytes calldata _data
+    )
+        external view returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(
+            // byte(0x19), byte(0x01)
+            "\x19\x01",
+            DOMAIN_SEPARATOR,
+            keccak256(abi.encode(
+                EXECUTE_TYPEHASH,
+                _callType,
+                nonce,
+                _value,
+                _target,
+                keccak256(_data)
+            ))
+        ));
     }
 }
