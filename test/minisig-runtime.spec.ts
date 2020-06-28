@@ -1,45 +1,48 @@
-const { expect } = require('chai');
-const ethers = require('ethers'); // wtf buidler-ethers?
-const BN = require('bn.js');
+import { expect } from "chai";
+import { ethers } from "ethers"; // wtf buidler-ethers?
+import BN from "bn.js";
 
-const Minisig = require('../artifacts/Minisig.json');
-const Target = require('../artifacts/Target.json');
-const getWallets = require('../scripts/wallets.js');
-const C = require('./utils/constants.js');
+import Minisig from "../artifacts/Minisig.json";
+import Target from "../artifacts/Target.json";
+
+import { getWallets } from "../scripts/wallets";
+import C from "./utils/constants";
+
 
 describe("Minisig runtime", () => {
-  var msig;
-  var targ;
-  var usrs;
-  var usrAddrs;
-  const m = 2; // m of n multisig
-  const n = 3;
+  const msigParams = { m: 2, n: 3 } // m of n multisig
+
+  let provider: ethers.providers.JsonRpcProvider;
+  let sender: ethers.Signer;
+  let msig: ethers.Contract;
+  let targ: ethers.Contract;
+  let usrs: ethers.Wallet[];
+  let usrAddrs: string[];
+  let msigFactory: ethers.ContractFactory;
+  let targFactory: ethers.ContractFactory;
 
   before("get provider", () => {
-    this.provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-    this.sender = this.provider.getSigner();
+    provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+    sender = provider.getSigner();
 
-    this.msigFactory = new ethers.ContractFactory(
+    msigFactory = new ethers.ContractFactory(
       new ethers.utils.Interface(Minisig.abi),
       Minisig.bytecode,
-      this.sender
+      sender
     );
-    this.targFactory = new ethers.ContractFactory(
+    targFactory = new ethers.ContractFactory(
       new ethers.utils.Interface(Target.abi),
       Target.bytecode,
-      this.sender
+      sender
     );
   });
 
   beforeEach("deploy minisig", async () => {
-    usrs = sortByAddr(getWallets(n));
+    usrs = sortByAddr(getWallets(msigParams.n));
     usrAddrs = usrs.map(u => u.address);
 
-    // const msigFactory = await ethers.getContractFactory("Minisig");
-    // const targFactory = await ethers.getContractFactory("Target");
-    msig = await this.msigFactory.deploy(m, usrAddrs);
-    targ = await this.targFactory.deploy();
-
+    msig = await msigFactory.deploy(msigParams.m, usrAddrs);
+    targ = await targFactory.deploy();
   });
 
   describe("getters", () => {
@@ -47,7 +50,7 @@ describe("Minisig runtime", () => {
       expect(await msig.allSigners()).to.deep.eq(usrAddrs);
     });
     it("threshold()", async () => {
-      expect(await msig.threshold()).to.eq(m);
+      expect(await msig.threshold()).to.eq(msigParams.m);
     });
     it("nonce", async () => {
       expect((await msig.nonce()).toString()).to.eq('0');
@@ -64,7 +67,6 @@ describe("Minisig runtime", () => {
   describe("execute", () => {
     it("works", async () => {
       const val = ethers.utils.parseEther('1');
-      // const val = 0;
 
       // get digest
       const digest = await msig.encode(0, val, targ.address, '0x');
@@ -74,14 +76,13 @@ describe("Minisig runtime", () => {
       const sigs = keys.map(k => ethers.utils.joinSignature(k.signDigest(digest)));
       const allSigs = ethers.utils.hexlify(ethers.utils.concat(sigs));
       await msig.execute(0, val, targ.address, '0x', allSigs, {value: val});
-      // console.log('bal', await targ.);
       expect((await msig.nonce()).toString()).to.eq('1');
     });
   });
 });
 
-const sortByAddr = (wallets) => (
-  wallets.sort((a, b) => (
-    (new BN(a.address.slice(2), 16)).sub(new BN(b.address.slice(2), 16))
-  ))
-);
+function sortByAddr(wallets: ethers.Wallet[]) {
+  return wallets.sort((a, b) => (
+    Number(a.address.toLowerCase()) - Number(b.address.toLowerCase())
+  ));
+};

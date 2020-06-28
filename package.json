@@ -17,6 +17,11 @@
     "ethers": "^5.0.2"
   },
   "dependencies": {
-    "bn.js": "^5.1.2"
+    "@types/chai": "^4.2.11",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^14.0.14",
+    "bn.js": "^5.1.2",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.5"
   }
 }

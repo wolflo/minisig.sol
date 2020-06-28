@@ -1,5 +1,7 @@
-const BN = require('bn.js');
-const ethers = require('ethers');
+/* const BN = require('bn.js'); */
+/* const ethers = require('ethers'); */
+import { ethers } from "ethers";
+import BN from "bn.js";
 
 const eip712 = {
   CHAIN_ID: new BN("1337"),
@@ -7,4 +9,4 @@ const eip712 = {
   EXECUTE_TYPEHASH: "0xb4f360c8f1871041e03766587e5a864a0ff1c6996710c3b20746a744cee8a609",
 }
 
-module.exports = { ...ethers.constants, ...eip712 }
+export default { ...ethers.constants, ...eip712 }

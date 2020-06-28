@@ -1,15 +1,15 @@
 // usePlugin('buidler-ethers-v5');
-
-const getWallets = require('./scripts/wallets.js');
+import { BuidlerConfig, task } from "@nomiclabs/buidler/config";
+import { getWallets } from "./scripts/wallets";
 
 task("wallets", "Prints mnemonic-derived wallet addresses", async () => {
-  const wallets = getWallets();
+  const wallets = getWallets(3);
   for(const wallet of wallets) {
     console.log(wallet.address);
   }
 });
 
-module.exports = {
+const config: BuidlerConfig = {
   defaultNetwork: "buidlerevm",
   solc: {
     version: "0.6.6",
@@ -19,3 +19,5 @@ module.exports = {
     },
   },
 };
+
+export default config;
