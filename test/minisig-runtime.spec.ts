@@ -1,6 +1,6 @@
 import { ethers } from "ethers"; // wtf buidler-ethers?
 import chai from "chai";
-import { solidity } from "ethereum-waffle";
+import { MockProvider, deployContract, solidity } from "ethereum-waffle";
 import BN from "bn.js";
 
 // contract artifacts
@@ -24,31 +24,16 @@ describe("Minisig runtime", () => {
 
   let msig: ethers.Contract;
   let targ: ethers.Contract;
-  let msigFactory: ethers.ContractFactory;
-  let targFactory: ethers.ContractFactory;
 
-  before("get provider", () => {
-    const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-    sender = provider.getSigner();
-
-    msigFactory = new ethers.ContractFactory(
-      new ethers.utils.Interface(Minisig.abi),
-      Minisig.bytecode,
-      sender
-    );
-    targFactory = new ethers.ContractFactory(
-      new ethers.utils.Interface(Target.abi),
-      Target.bytecode,
-      sender
-    );
-  });
-
-  beforeEach("deploy minisig", async () => {
+  before("get signers", () => {
+    sender = new MockProvider().getWallets()[0];
     usrs = sortByAddr(getWallets(msigParams.n));
     usrAddrs = usrs.map(u => u.address);
+  });
 
-    msig = await msigFactory.deploy(msigParams.m, usrAddrs);
-    targ = await targFactory.deploy();
+  beforeEach("deploy contracts", async () => {
+    msig = await deployContract(sender, Minisig, [ msigParams.m, usrAddrs ]);
+    targ = await deployContract(sender, Target);
   });
 
   describe("getters", () => {
@@ -67,8 +52,6 @@ describe("Minisig runtime", () => {
   });
 
   // TODO:
-  // - typescript
-  // - provider versatility / get rid of buidler-ethers
   // - encode digest in js
   describe("execute", () => {
     it("works", async () => {
