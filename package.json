@@ -12,16 +12,14 @@
   "license": "ISC",
   "devDependencies": {
     "@nomiclabs/buidler": "^1.3.8",
-    "buidler-ethers-v5": "^0.2.2",
-    "chai": "^4.2.0",
-    "ethers": "^5.0.2"
-  },
-  "dependencies": {
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^14.0.14",
     "bn.js": "^5.1.2",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^3.0.0",
+    "ethers": "^5.0.2",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5"
-  }
+  },
+  "dependencies": {}
 }

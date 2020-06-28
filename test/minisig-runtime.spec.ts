@@ -1,28 +1,34 @@
-import { expect } from "chai";
 import { ethers } from "ethers"; // wtf buidler-ethers?
+import chai from "chai";
+import { solidity } from "ethereum-waffle";
 import BN from "bn.js";
 
+// contract artifacts
 import Minisig from "../artifacts/Minisig.json";
 import Target from "../artifacts/Target.json";
 
+// utilities
 import { getWallets } from "../scripts/wallets";
 import C from "./utils/constants";
 
+// configure chai to use waffle matchers
+chai.use(solidity);
+const { expect } = chai;
+
+const msigParams = { m: 2, n: 3 } // m of n multisig
 
 describe("Minisig runtime", () => {
-  const msigParams = { m: 2, n: 3 } // m of n multisig
-
-  let provider: ethers.providers.JsonRpcProvider;
   let sender: ethers.Signer;
-  let msig: ethers.Contract;
-  let targ: ethers.Contract;
   let usrs: ethers.Wallet[];
   let usrAddrs: string[];
+
+  let msig: ethers.Contract;
+  let targ: ethers.Contract;
   let msigFactory: ethers.ContractFactory;
   let targFactory: ethers.ContractFactory;
 
   before("get provider", () => {
-    provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+    const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
     sender = provider.getSigner();
 
     msigFactory = new ethers.ContractFactory(
@@ -53,7 +59,7 @@ describe("Minisig runtime", () => {
       expect(await msig.threshold()).to.eq(msigParams.m);
     });
     it("nonce", async () => {
-      expect((await msig.nonce()).toString()).to.eq('0');
+      expect(await msig.nonce()).to.eq(0);
     });
     it("DOMAIN_SEPARATOR()", async () => {
       //todo
@@ -76,7 +82,7 @@ describe("Minisig runtime", () => {
       const sigs = keys.map(k => ethers.utils.joinSignature(k.signDigest(digest)));
       const allSigs = ethers.utils.hexlify(ethers.utils.concat(sigs));
       await msig.execute(0, val, targ.address, '0x', allSigs, {value: val});
-      expect((await msig.nonce()).toString()).to.eq('1');
+      expect(await msig.nonce()).to.eq(1);
     });
   });
 });
