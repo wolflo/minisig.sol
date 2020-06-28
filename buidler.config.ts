@@ -1,4 +1,3 @@
-// usePlugin('buidler-ethers-v5');
 import { BuidlerConfig, task } from "@nomiclabs/buidler/config";
 import { getWallets } from "./scripts/wallets";
 
