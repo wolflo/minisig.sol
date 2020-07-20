@@ -14,7 +14,7 @@ interface Action {
   data: string,
 }
 
-export async function checkExecute(
+export async function testExecute(
   msig: ethers.Contract,
   targ: ethers.Contract,
   usrs: ethers.Wallet[],
@@ -22,6 +22,8 @@ export async function checkExecute(
   callValue: ethers.BigNumberish,
   domSep: string,
 ) {
+    const provider = msig.provider;
+
     // get digest
     const digest = utils.encodeExecuteDigest(
       domSep,
@@ -36,8 +38,8 @@ export async function checkExecute(
     const allSigs = utils.allSign(usrs, digest);
 
     const targNonce0 = await targ.nonce();
-    /* const targBal0 = await targ. */
-    const targBal0 = await targ.provider.getBalance(targ.address);
+    const targBal0 = await provider.getBalance(targ.address);
+    const msigBal0 = await provider.getBalance(msig.address);
 
     // execute
     await msig.execute(
@@ -55,8 +57,28 @@ export async function checkExecute(
     // check call
     const log = await targ.calls(targNonce0);
     expect(log.callType).to.eq(act.callType);
-    expect(log.src).to.eq(msig.address);
-    expect(log.val).to.eq(act.value);
     expect(log.data).to.eq(act.data);
-    expect(await targ.provider.getBalance(targ.address)).to.eq(targBal0.add(act.value));
+
+    // CALL
+    if (act.callType == 0) {
+      expect(log.src).to.eq(msig.address);
+      expect(log.val).to.eq(act.value);
+      expect(await provider.getBalance(targ.address))
+        .to.eq(targBal0.add(act.value));
+
+    // DELEGATECALL
+    } else if (act.callType == 1) {
+      expect(log.src).to.eq(await msig.signer.getAddress());
+      expect(log.val).to.eq(callValue);
+      expect(await provider.getBalance(msig.address))
+        .to.eq(msigBal0.add(callValue));
+
+    } else {
+      throw "invalid callType!"
+    }
+    // act.value should be included with CALLs
+    if(act.callType == 0) {
+      expect(await targ.provider.getBalance(targ.address))
+        .to.eq(targBal0.add(act.value));
+    }
 }
