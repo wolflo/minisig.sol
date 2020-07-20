@@ -127,11 +127,21 @@ contract Minisig {
         if (_callType == CallType.DelegateCall) {
             // TODO: prevent delegatecall value confusion?
             // require(_value == 0 || _value == msg.value)
+
+            // existence check
+            uint256 targetCodeSize;
+            assembly { targetCodeSize := extcodesize(_target) }
+            require(targetCodeSize > 0, "delegatecall-to-empty-code");
+
             (success,) = _target.delegatecall(_data);
         }
 
-        // check call succeeded and nonce unchanged
+        // check call succeeded
         require(success, "call-failure");
+
+        // check nonce unchanged. Prevents delegatecall from overwriting
+        // nonce slot. Also prevents re-entrancy on CALL ops, which may or may
+        // not be desirable.
         require(nonce == newNonce, "nonce-changed");
     }
 
