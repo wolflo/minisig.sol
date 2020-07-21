@@ -63,6 +63,7 @@ contract Minisig {
     )
         external
         payable
+        returns (bool)
     {
         // must submit enough signatures to satisfy threshold
         // max(uint8) * 65 << max(uint256), so no overflow check
@@ -143,6 +144,8 @@ contract Minisig {
         // nonce slot. Also prevents re-entrancy on CALL ops, which may or may
         // not be desirable.
         require(nonce == newNonce, "nonce-changed");
+
+        return success;
     }
 
     // return signers array
