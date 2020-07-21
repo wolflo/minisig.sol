@@ -150,27 +150,4 @@ contract Minisig {
         return signers;
     }
 
-    //td remove
-    function encode(
-        CallType _callType,
-        uint256 _value,
-        address _target,
-        bytes calldata _data
-    )
-        external view returns (bytes32)
-    {
-        return keccak256(abi.encodePacked(
-            // byte(0x19), byte(0x01)
-            "\x19\x01",
-            DOMAIN_SEPARATOR,
-            keccak256(abi.encode(
-                EXECUTE_TYPEHASH,
-                _callType,
-                nonce,
-                _value,
-                _target,
-                keccak256(_data)
-            ))
-        ));
-    }
 }
