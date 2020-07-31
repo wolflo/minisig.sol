@@ -103,7 +103,6 @@ contract Minisig {
             address addr = ecrecover(digest, v, r, s);
             sigIdx += 65;
 
-            // TODO lol
             // for current signerIdx to end of signers, check each signer against
             // recovered address.
             // If we exhaust the list without a match, revert
@@ -125,7 +124,7 @@ contract Minisig {
         if (_callType == CallType.Call) {
             (success,) = _target.call{value: _value}(_data);
         }
-        if (_callType == CallType.DelegateCall) {
+        else if (_callType == CallType.DelegateCall) {
             // TODO: prevent delegatecall value confusion?
             // require(_value == 0 || _value == msg.value)
 
@@ -135,17 +134,16 @@ contract Minisig {
             require(targetCodeSize > 0, "delegatecall-to-empty-code");
 
             (success,) = _target.delegatecall(_data);
+
+            // check nonce unchanged. Prevents delegatecall from overwriting
+            // nonce slot.
+            require(nonce == newNonce, "nonce-changed");
         }
 
         // check call succeeded
         require(success, "call-failure");
 
-        // check nonce unchanged. Prevents delegatecall from overwriting
-        // nonce slot. Also prevents re-entrancy on CALL ops, which may or may
-        // not be desirable.
-        require(nonce == newNonce, "nonce-changed");
-
-        return success;
+        return true;
     }
 
     // return signers array
