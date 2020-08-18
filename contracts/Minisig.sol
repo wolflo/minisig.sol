@@ -29,7 +29,7 @@ contract Minisig {
     receive () external payable {} // recieve ether only if calldata is empty
 
     // --- Constructor ---
-    constructor(uint8 _threshold, address[] memory _signers) public {
+    constructor(uint8 _threshold, address[] memory _signers) public payable {
         require(_signers.length >= _threshold, "signers-invalid-length");
 
         // set domain separator for EIP712 signatures
