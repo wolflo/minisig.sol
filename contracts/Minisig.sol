@@ -125,8 +125,7 @@ contract Minisig {
             (success,) = _target.call{value: _value}(_data);
         }
         else if (_callType == CallType.DelegateCall) {
-            // TODO: prevent delegatecall value confusion?
-            // require(_value == 0 || _value == msg.value)
+            require(_value == msg.value, "delegatecall-wrong-signed-value");
 
             // existence check
             uint256 targetCodeSize;
