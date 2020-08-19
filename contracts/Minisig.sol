@@ -15,15 +15,15 @@ contract Minisig {
 
     // --- State ---
     uint256 public nonce;
-    address[] internal signers; // approved signers, immutable in huff impl.
 
     // --- Immutables and constants ---
+    address[] internal signers; // approved signers, immutable in huff impl.
     uint8 public immutable threshold;   // minimum required signers
 
     // EIP712 stuff
     bytes32 public immutable DOMAIN_SEPARATOR;
     bytes32 internal constant DOMAIN_SEPARATOR_TYPEHASH = keccak256("EIP712Domain(uint256 chainId,uint256 deployBlock,address verifyingContract)");
-    bytes32 internal constant EXECUTE_TYPEHASH = keccak256("Execute(uint8 callType,uint256 nonce,uint256 value,address target,bytes data)");
+    bytes32 internal constant EXECUTE_TYPEHASH = keccak256("Execute(address target,uint8 callType,uint256 nonce,uint256 txGas,uint256 value,bytes data)");
 
     // --- Fallback function ---
     receive () external payable {} // recieve ether only if calldata is empty
@@ -55,9 +55,10 @@ contract Minisig {
     }
 
     function execute(
-        CallType _callType,
-        uint256 _value,
         address _target,
+        CallType _callType,
+        uint256 _txGas,
+        uint256 _value,
         bytes calldata _data,
         bytes calldata _sigs
     )
@@ -81,10 +82,11 @@ contract Minisig {
             DOMAIN_SEPARATOR,
             keccak256(abi.encode(
                 EXECUTE_TYPEHASH,
+                _target,
                 _callType,
                 origNonce,
+                _txGas,
                 _value,
-                _target,
                 keccak256(_data)
             ))
         ));
@@ -122,7 +124,7 @@ contract Minisig {
         // make call dependent on callType
         bool success;
         if (_callType == CallType.Call) {
-            (success,) = _target.call{value: _value}(_data);
+            (success,) = _target.call{value: _value, gas: _txGas}(_data);
         }
         else if (_callType == CallType.DelegateCall) {
             require(_value == msg.value, "delegatecall-wrong-signed-value");
@@ -132,7 +134,7 @@ contract Minisig {
             assembly { targetCodeSize := extcodesize(_target) }
             require(targetCodeSize > 0, "delegatecall-to-empty-code");
 
-            (success,) = _target.delegatecall(_data);
+            (success,) = _target.delegatecall{gas: _txGas}(_data);
 
             // check nonce unchanged. Prevents delegatecall from overwriting
             // nonce slot.
