@@ -1,7 +1,33 @@
 import { ethers } from "ethers";
+
+import { Action } from "./types";
 import C from "./constants";
 
 const coder = ethers.utils.defaultAbiCoder;
+
+// from wighawag/buidler-ethers-v5
+function fixProvider(provider: any): any {
+  // alow it to be used by ethers without any change
+  if (provider.sendAsync === undefined) {
+    provider.sendAsync = (
+      req: {
+        id: number;
+        jsonrpc: string;
+        method: string;
+        params: any[];
+      },
+      callback: (error: any, result: any) => void
+    ) => {
+      provider
+        .send(req.method, req.params)
+        .then((result: any) =>
+          callback(null, { result, id: req.id, jsonrpc: req.jsonrpc })
+        )
+        .catch((error: any) => callback(error, null));
+    };
+  }
+  return provider;
+}
 
 function getFactory(signer: ethers.Signer, artifact: any) {
   return new ethers.ContractFactory(
@@ -12,19 +38,17 @@ function getFactory(signer: ethers.Signer, artifact: any) {
 }
 
 // todo: restrict types
-function encodeExecuteDigest(
+function encodeExecDigest(
   domSep: string,   // bytes32
-  callType: number, // number
   nonce: ethers.BigNumberish,
-  value: ethers.BigNumberish,
   target: string,   // address
-  data: string      // hex string
+  act: Action,
 ) {
-  const hashData = ethers.utils.solidityKeccak256(['bytes'], [data]);
+  const hashData = ethers.utils.solidityKeccak256(['bytes'], [act.data]);
   const hashStruct = ethers.utils.keccak256(
     coder.encode(
-      ['bytes32', 'uint8', 'uint256', 'uint256', 'address', 'bytes32'],
-      [C.msig.EXECUTE_TYPEHASH, callType, nonce, value, target, hashData]
+      ['bytes32', 'address', 'uint8', 'uint256', 'uint256', 'uint256', 'bytes32'],
+      [C.msig.EXEC_TYPEHASH, target, act.type, nonce, act.gas, act.value, hashData]
     )
   );
   const preImg = ethers.utils.solidityPack(
@@ -34,14 +58,14 @@ function encodeExecuteDigest(
   return ethers.utils.keccak256(preImg);
 }
 
-function encodeDomainSeparator(
+function encodeDomSep(
   chainId: number,
   block: number,
   addr: string
 ) {
   const preImg = coder.encode(
     ['bytes32', 'uint256', 'uint256', 'address'],
-    [C.msig.DOMAIN_SEPARATOR_TYPEHASH, chainId, block, addr]
+    [C.msig.DOMSEP_TYPEHASH, chainId, block, addr]
   );
   return ethers.utils.keccak256(preImg);
 }
@@ -61,9 +85,10 @@ function randBytes(len: number) {
 }
 
 export default {
+  fixProvider,
   getFactory,
-  encodeDomainSeparator,
-  encodeExecuteDigest,
+  encodeDomSep,
+  encodeExecDigest,
   allSign,
   randBytes
 }

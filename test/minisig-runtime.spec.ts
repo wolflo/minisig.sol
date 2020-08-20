@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import { solidity } from "ethereum-waffle";
+import { network } from "@nomiclabs/buidler";
 import chai from "chai";
 
 // contract artifacts
@@ -8,7 +9,8 @@ import Target from "../artifacts/Target.json";
 
 // utilities
 import { getWallets } from "../scripts/wallets";
-import { testExecute } from "./utils/tests";
+import { testExecCall } from "./utils/tests";
+import { Factories } from "./utils/types";
 import utils from "./utils/utils";
 import C from "./utils/constants";
 
@@ -17,11 +19,6 @@ chai.use(solidity);
 const { expect } = chai;
 
 const msigParams = { m: 2, n: 3 } // m of n multisig
-
-interface Factories {
-  msig: ethers.ContractFactory,
-  targ: ethers.ContractFactory
-}
 
 describe("Minisig runtime", () => {
   let sender: ethers.Signer;
@@ -33,8 +30,10 @@ describe("Minisig runtime", () => {
   let targ: ethers.Contract;
 
   before("get provider", () => {
-    const provider = new ethers.providers.JsonRpcProvider();
-    sender = provider.getSigner();
+    const provider = new ethers.providers.Web3Provider(
+      utils.fixProvider(network.provider as any)
+    );
+    sender = provider.getSigner(0);
     usrs = sortByAddr(getWallets(msigParams.n));
     usrAddrs = usrs.map(u => u.address);
 
@@ -60,7 +59,7 @@ describe("Minisig runtime", () => {
       expect(await msig.nonce()).to.eq(0);
     });
     it("DOMAIN_SEPARATOR()", async () => {
-      const domSep = utils.encodeDomainSeparator(
+      const domSep = utils.encodeDomSep(
         msig.deployTransaction.chainId,
         msig.deployTransaction.blockNumber!,
         msig.address
@@ -78,8 +77,8 @@ describe("Minisig runtime", () => {
       badUsr = ethers.Wallet.createRandom();
     });
 
-    beforeEach("set domain separator", () => {
-      domSep = utils.encodeDomainSeparator(
+    beforeEach("encode domain separator", () => {
+      domSep = utils.encodeDomSep(
         msig.deployTransaction.chainId,
         msig.deployTransaction.blockNumber!,  // not null because we deployed it
         msig.address
@@ -91,80 +90,86 @@ describe("Minisig runtime", () => {
 
       it("no data, no value", async () => {
         const callValue = 0;
+        const nonce = 0;
         const action = {
-          callType: callType,
+          type: callType,
+          gas: 100000,
           value: 0,
-          nonce: 0,
           data: '0x'
         };
-        await testExecute(msig, targ, usrs, action, callValue, domSep);
+
+        await testExecCall(msig, targ, usrs, domSep, nonce, action, callValue);
       });
 
       it("data, value", async () => {
         const callValue = 0;
+        const nonce = 0;
         const action = {
-          callType: callType,
+          type: callType,
+          gas: 100000,
           value: ethers.utils.parseEther('1'),
-          nonce: 0,
           data: utils.randBytes(50)
         };
+
         // seed msig with some eth
         await sender.sendTransaction({ to: msig.address, value: action.value });
-        await testExecute(msig, targ, usrs, action, callValue, domSep);
+        await testExecCall(msig, targ, usrs, domSep, nonce, action, callValue);
       });
 
       it("data, callValue", async () => {
         const callValue = ethers.utils.parseEther('1');
+        const nonce = 0;
         const action = {
-          callType: callType,
+          type: callType,
+          gas: 100000,
           value: callValue,
-          nonce: 0,
           data: utils.randBytes(50)
         };
-        await testExecute(msig, targ, usrs, action, callValue, domSep);
+
+        await testExecCall(msig, targ, usrs, domSep, nonce, action, callValue);
       });
     });
 
     // TODO: do we need to go back to event so we can log from delegatecall?
-    describe("DELEGATE_CALL", () => {
-      const callType = 1;
+    /* describe("DELEGATE_CALL", () => { */
+    /*   const callType = 1; */
 
-      it("no data, no value", async () => {
-        const callValue = 0;
-        const action = {
-          callType: callType,
-          value: 0,
-          nonce: 0,
-          data: '0x'
-        };
-        await testExecute(msig, targ, usrs, action, callValue, domSep);
-      });
+    /*   it("no data, no value", async () => { */
+    /*     const callValue = 0; */
+    /*     const action = { */
+    /*       callType: callType, */
+    /*       value: 0, */
+    /*       nonce: 0, */
+    /*       data: '0x' */
+    /*     }; */
+    /*     await testExecute(msig, targ, usrs, action, callValue, domSep); */
+    /*   }); */
 
-      it("data, value", async () => {
-        const callValue = 0;
-        const action = {
-          callType: callType,
-          value: ethers.utils.parseEther('1'),
-          nonce: 0,
-          data: utils.randBytes(50)
-        };
-        // seed msig with some eth
-        await sender.sendTransaction({ to: msig.address, value: action.value });
-        await testExecute(msig, targ, usrs, action, callValue, domSep);
-      });
+    /*   it("data, value", async () => { */
+    /*     const callValue = 0; */
+    /*     const action = { */
+    /*       callType: callType, */
+    /*       value: ethers.utils.parseEther('1'), */
+    /*       nonce: 0, */
+    /*       data: utils.randBytes(50) */
+    /*     }; */
+    /*     // seed msig with some eth */
+    /*     await sender.sendTransaction({ to: msig.address, value: action.value }); */
+    /*     await testExecute(msig, targ, usrs, action, callValue, domSep); */
+    /*   }); */
 
-      it("data, callValue", async () => {
-        const callValue = ethers.utils.parseEther('1');
-        const action = {
-          callType: callType,
-          value: callValue,
-          nonce: 0,
-          data: utils.randBytes(50)
-        };
-        await testExecute(msig, targ, usrs, action, callValue, domSep);
-      });
+    /*   it("data, callValue", async () => { */
+    /*     const callValue = ethers.utils.parseEther('1'); */
+    /*     const action = { */
+    /*       callType: callType, */
+    /*       value: callValue, */
+    /*       nonce: 0, */
+    /*       data: utils.randBytes(50) */
+    /*     }; */
+    /*     await testExecute(msig, targ, usrs, action, callValue, domSep); */
+    /*   }); */
 
-    });
+    /* }); */
 
 
   });
