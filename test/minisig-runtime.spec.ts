@@ -9,7 +9,7 @@ import Target from "../artifacts/Target.json";
 
 // utilities
 import { getWallets } from "../scripts/wallets";
-import { testExecCall } from "./utils/tests";
+import { testExecCall, testExecDCall  } from "./utils/tests";
 import { Factories } from "./utils/types";
 import utils from "./utils/utils";
 import C from "./utils/constants";
@@ -130,47 +130,37 @@ describe("Minisig runtime", () => {
       });
     });
 
-    // TODO: do we need to go back to event so we can log from delegatecall?
-    /* describe("DELEGATE_CALL", () => { */
-    /*   const callType = 1; */
+    describe("DELEGATE_CALL", () => {
+      const callType = 1;
 
-    /*   it("no data, no value", async () => { */
-    /*     const callValue = 0; */
-    /*     const action = { */
-    /*       callType: callType, */
-    /*       value: 0, */
-    /*       nonce: 0, */
-    /*       data: '0x' */
-    /*     }; */
-    /*     await testExecute(msig, targ, usrs, action, callValue, domSep); */
-    /*   }); */
+      it("no data, no value", async () => {
+        const callValue = 0;
+        const nonce = 0;
+        const action = {
+          type: callType,
+          gas: 100000,
+          value: 0,
+          data: '0x'
+        };
 
-    /*   it("data, value", async () => { */
-    /*     const callValue = 0; */
-    /*     const action = { */
-    /*       callType: callType, */
-    /*       value: ethers.utils.parseEther('1'), */
-    /*       nonce: 0, */
-    /*       data: utils.randBytes(50) */
-    /*     }; */
-    /*     // seed msig with some eth */
-    /*     await sender.sendTransaction({ to: msig.address, value: action.value }); */
-    /*     await testExecute(msig, targ, usrs, action, callValue, domSep); */
-    /*   }); */
+        await testExecDCall(msig, targ, usrs, domSep, nonce, action, callValue);
+      });
 
-    /*   it("data, callValue", async () => { */
-    /*     const callValue = ethers.utils.parseEther('1'); */
-    /*     const action = { */
-    /*       callType: callType, */
-    /*       value: callValue, */
-    /*       nonce: 0, */
-    /*       data: utils.randBytes(50) */
-    /*     }; */
-    /*     await testExecute(msig, targ, usrs, action, callValue, domSep); */
-    /*   }); */
+      it("data, callvalue == value", async () => {
+        const callValue = ethers.utils.parseEther('1');
+        const nonce = 0;
+        const action = {
+          type: callType,
+          gas: 100000,
+          value: callValue,
+          data: utils.randBytes(50)
+        };
+        // seed msig with some eth
+        /* await sender.sendTransaction({ to: msig.address, value: action.value }); */
+        await testExecDCall(msig, targ, usrs, domSep, nonce, action, callValue);
+      });
 
-    /* }); */
-
+    });
 
   });
 });
