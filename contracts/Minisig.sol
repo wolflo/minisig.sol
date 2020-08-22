@@ -22,8 +22,10 @@ contract Minisig {
 
     // EIP712 stuff
     bytes32 public immutable DOMAIN_SEPARATOR;
-    bytes32 internal constant DOMAIN_SEPARATOR_TYPEHASH = keccak256("EIP712Domain(uint256 chainId,uint256 deployBlock,address verifyingContract)");
-    bytes32 internal constant EXECUTE_TYPEHASH = keccak256("Execute(address target,uint8 callType,uint256 nonce,uint256 txGas,uint256 value,bytes data)");
+    // keccak256("EIP712Domain(uint256 chainId,uint256 deployBlock,address verifyingContract)");
+    bytes32 internal constant DOMAIN_SEPARATOR_TYPEHASH = 0x0a684fcd4736a0673611bfe1e61ceb93fb09bcd288bc72c1155ebe13280ffeca;
+    // keccak256("Execute(address target,uint8 callType,uint256 nonce,uint256 txGas,uint256 value,bytes data)");
+    bytes32 internal constant EXECUTE_TYPEHASH = 0x9c1370cbf5462da152553d1b9556f96a7eb4dfe28fbe07e763227834d409103a;
 
     // --- Fallback function ---
     receive () external payable {} // recieve ether only if calldata is empty
