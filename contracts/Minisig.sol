@@ -97,15 +97,14 @@ contract Minisig {
         // Note: a single invalid sig will cause a revert, even if there are
         // `>= threshold` valid sigs. But, an invalid sig after `threshold`
         // valid sigs is ignored
-        uint256 sigIdx = 0;
         uint256 signerIdx = 0;
         for (uint256 i = 0; i < threshold; i++) {
             // sig should be 65 bytes total, {32 byte r}{32 byte s}{1 byte v}
-            uint8 v = uint8(_sigs[sigIdx+64]);
-            bytes32 r = abi.decode(_sigs[sigIdx:sigIdx+32], (bytes32));
-            bytes32 s = abi.decode(_sigs[sigIdx+32:sigIdx+64], (bytes32));
+            uint256 sigIdx = 65 * i;
+            bytes32 r = abi.decode(_sigs[ sigIdx : sigIdx + 32 ], (bytes32));
+            bytes32 s = abi.decode(_sigs[ sigIdx + 32 : sigIdx + 64 ], (bytes32));
+            uint8 v = uint8(_sigs[ sigIdx + 64 ]);
             address addr = ecrecover(digest, v, r, s);
-            sigIdx += 65;
 
             // for current signerIdx to end of signers, check each signer against
             // recovered address.
@@ -120,7 +119,6 @@ contract Minisig {
                 }
             }
             require(elem, "not-signer");
-            elem = false;
         }
 
         // make call dependent on callType
