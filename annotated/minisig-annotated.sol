@@ -124,6 +124,36 @@ contract Minisig {
         - 52338643092673742869439231165330154939021212843735210262070227489406434979142
         - 0x73b69f48c7a06db62993a022933c4618f952870bda057d9cb60bde4f73d0ad46
 -------- 0x4fc
+    17. keccak256(abi.encodePacked("\x19\x01", DOM_SEP, struct_hash)
+        - mstore(
+            free_mem_ptr + 32
+            0x1901000000000000000000000000000000000000000000000000000000000000,
+          )
+        - mstore(free_mem_ptr+32+2, domSep) -- mstore domsep immediately after separator bytes
+        - mstore(ptr_to_domsep+32, struct_hash)
+        - mstore(free_mem_ptr, len_data_to_hash)
+            - mstore(0x180, 0x42)
+            - len_data_to_hash = end_of_data_to_hash - free_mem_ptr - 32 = 66 bytes
+        - mstore new mem ptr -- mstore(0x40, 0x1e2)
+        - mload len_data_to_hash from old free_mem_ptr
+        - sha3(start_of_data_to_hash, len_data_to_hash)
+        - sha3(0x1a0, 0x42)
+            - 93845864599993429841562554618472796251025162734423712218336403257576261726994
+            - 0xcf7ae085e8a38f9af9a9a35e8e58af1ed24fa50d7572b3b98222527ef190b312
+^ signed digest
+-------- 0x551
+-------- 0x562 jumpdest -- start of signature validation loop
+    18. push and mask threshold?
+        - check (thresh > counter?) -> if not, jump to 0x7bd
+        64 < 195
+
+
+notes:
+    - solidity does not overwrite the data from generating the struct_hash when
+      it generates the digest hash
+    - solidity uses the word just before the data that's being hashed to pass
+      the length of data to hash
+    - the threshold seems to be pushed in at least 2 separate places
 */
     function execute(
         address _target,
@@ -166,15 +196,14 @@ contract Minisig {
         // Note: a single invalid sig will cause a revert, even if there are
         // `>= threshold` valid sigs. But, an invalid sig after `threshold`
         // valid sigs is ignored
-        uint256 sigIdx = 0;
         uint256 signerIdx = 0;
         for (uint256 i = 0; i < threshold; i++) {
             // sig should be 65 bytes total, {32 byte r}{32 byte s}{1 byte v}
-            uint8 v = uint8(_sigs[sigIdx+64]);
-            bytes32 r = abi.decode(_sigs[sigIdx:sigIdx+32], (bytes32));
-            bytes32 s = abi.decode(_sigs[sigIdx+32:sigIdx+64], (bytes32));
+            uint256 sigIdx = 65 * i;
+            bytes32 r = abi.decode(_sigs[ sigIdx : sigIdx + 32 ], (bytes32));
+            bytes32 s = abi.decode(_sigs[ sigIdx + 32 : sigIdx + 64 ], (bytes32));
+            uint8 v = uint8(_sigs[ sigIdx + 64 ]);
             address addr = ecrecover(digest, v, r, s);
-            sigIdx += 65;
 
             // for current signerIdx to end of signers, check each signer against
             // recovered address.
@@ -189,7 +218,6 @@ contract Minisig {
                 }
             }
             require(elem, "not-signer");
-            elem = false;
         }
 
         // make call dependent on callType
