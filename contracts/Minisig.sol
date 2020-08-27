@@ -114,7 +114,7 @@ contract Minisig {
             for (uint256 j = signerIdx; j < signers.length && !elem; j++) {
                 if (addr == signers[j]) {
                     elem = true;
-                    signerIdx = j;
+                    signerIdx = j + 1;
                     // break
                 }
             }
