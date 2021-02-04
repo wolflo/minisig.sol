@@ -1,6 +1,8 @@
-node_modules/
-artifacts/
-typechain/
-coverage*
-cache/
+__pycache__
+.history
+.hypothesis/
 build/
+reports/
+venv/
+
+hevm/*.bin
