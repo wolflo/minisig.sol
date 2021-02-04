@@ -66,7 +66,6 @@ contract Minisig {
     )
         external
         payable
-        returns (bool)
     {
         // must submit enough signatures to satisfy threshold
         // max(uint8) * 65 << max(uint256), so no overflow check
@@ -143,8 +142,6 @@ contract Minisig {
 
         // check call succeeded
         require(success, "call-failure");
-
-        return true;
     }
 
     // return signers array
