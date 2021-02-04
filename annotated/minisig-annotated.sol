@@ -67,6 +67,7 @@ contract Minisig {
     - 0x82  (130) = 2 * 65 (threshold * len of a sig)
     - 0x6edd5fb8f80f6e3e748e6da8ed3048cd085077429aa0a80a7994c1b59363470f = domSep
     - 0x9c1370cbf5462da152553d1b9556f96a7eb4dfe28fbe07e763227834d409103a = exec typehash
+    0. check calldatasize >= 4 -- else jump to 0x4e
     1. dispatcher
     2. check !(calldatasize - 4 < 192)
     3. calldataload _target and mask address
@@ -142,10 +143,37 @@ contract Minisig {
             - 0xcf7ae085e8a38f9af9a9a35e8e58af1ed24fa50d7572b3b98222527ef190b312
 ^ signed digest
 -------- 0x551
--------- 0x562 jumpdest -- start of signature validation loop
+    19. push signerIdx and counter (and of course dup-swap-pop them both)
+-------- 0x562 jumpdest -- start of signature validation loop -- 55d?
     18. push and mask threshold?
-        - check (thresh > counter?) -> if not, jump to 0x7bd
+        - check (thresh < counter) -> if not, jump to 0x7bd
         64 < 195
+    20. decode next signature
+        - mul(65, counter)
+        - check some bounds?
+            - check starting index for r ! > ending index for r ?
+            - check ending index for r ! > len(_sigs)
+            - another check?
+            - mark some dests
+        - calldataload r of sig
+        - lot of other shit
+        - calldataload s of sig
+        - calldataload one word starting at v of sig, shr by 0xf8 (248), shl by 0xf8, then shr again by 0xf8
+        - store a bunch of shit
+        ----- 0x671
+        - call to ecrecover precompile
+            - 0x1e2 ret_ost
+            - looks like there is no check of returndatasize as long as success == 1
+            staticcall(gas, addr, argOst, argLen, retOst, retLen)
+            staticcall(0xfbfffff5064c, 1, 0x202, 0x80, 0x1e2, 0x20)
+cf7ae085e8a38f9af9a9a35e8e58af1ed24fa50d7572b3b98222527ef190b312 -- digest
+000000000000000000000000000000000000000000000000000000000000001b -- v
+083a52516903417ccb61d57ab9ebd8c24fa196f2891d130a803acc3f22ced451 -- r
+6edc945456d277a4e6eaf33fde4d9bd7b117f793eb6687b4355344e57ec0334c -- s
+        - start loadin up signers array
+        - check equality with signers[signerIdx]
+
+
 
 
 notes:
