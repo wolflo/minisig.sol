@@ -24,6 +24,7 @@ contract Minisig {
     bytes32 public immutable DOMAIN_SEPARATOR;
     // keccak256("EIP712Domain(uint256 chainId,uint256 deployBlock,address verifyingContract)");
     bytes32 internal constant DOMAIN_SEPARATOR_TYPEHASH = 0x0a684fcd4736a0673611bfe1e61ceb93fb09bcd288bc72c1155ebe13280ffeca;
+    // TODO: update exec typehash
     // keccak256("Execute(address target,uint8 callType,uint256 nonce,uint256 txGas,uint256 value,bytes data)");
     bytes32 internal constant EXECUTE_TYPEHASH = 0x9c1370cbf5462da152553d1b9556f96a7eb4dfe28fbe07e763227834d409103a;
 
@@ -57,6 +58,7 @@ contract Minisig {
     }
 
     function execute(
+        address _source,
         address _target,
         CallType _callType,
         uint256 _txGas,
@@ -67,6 +69,7 @@ contract Minisig {
         external
         payable
     {
+        require(_source == address(0) || _source == msg.sender, "invalid-caller");
         // must submit enough signatures to satisfy threshold
         // max(uint8) * 65 << max(uint256), so no overflow check
         require(_sigs.length >= uint256(threshold) * 65, "sigs-invalid-length");
@@ -83,6 +86,7 @@ contract Minisig {
             DOMAIN_SEPARATOR,
             keccak256(abi.encode(
                 EXECUTE_TYPEHASH,
+                _source,
                 _target,
                 _callType,
                 origNonce,
