@@ -132,11 +132,6 @@ contract Minisig {
         else if (_callType == CallType.DelegateCall) {
             require(_value == msg.value, "delegatecall-wrong-signed-value");
 
-            // existence check
-            uint256 targetCodeSize;
-            assembly { targetCodeSize := extcodesize(_target) }
-            require(targetCodeSize > 0, "delegatecall-to-empty-code");
-
             (success,) = _target.delegatecall{gas: _txGas}(_data);
 
             // check nonce unchanged. Prevents delegatecall from overwriting
