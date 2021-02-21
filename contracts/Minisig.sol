@@ -131,10 +131,6 @@ contract Minisig {
         }
         else if (_callType == CallType.DelegateCall) {
             (success,) = _target.delegatecall{gas: _txGas}(_data);
-
-            // check nonce unchanged. Prevents delegatecall from overwriting
-            // nonce slot.
-            require(nonce == newNonce, "nonce-changed");
         }
 
         // check call succeeded
