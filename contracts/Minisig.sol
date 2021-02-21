@@ -130,8 +130,6 @@ contract Minisig {
             (success,) = _target.call{value: _value, gas: _txGas}(_data);
         }
         else if (_callType == CallType.DelegateCall) {
-            require(_value == msg.value, "delegatecall-wrong-signed-value");
-
             (success,) = _target.delegatecall{gas: _txGas}(_data);
 
             // check nonce unchanged. Prevents delegatecall from overwriting

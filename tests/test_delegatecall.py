@@ -49,11 +49,3 @@ def test_fail_insufficient_sigs(msig, usrs):
     action = Action(CallType.DELEGATECALL)
     with brownie.reverts():
         signAndExecute(msig, usrs[0:C.THRESHOLD-1], action)
-
-def test_fail_unmatched_value(msig, usrs):
-    value = 100
-    action = Action(CallType.DELEGATECALL, C.ADDRESS_EMPTY, C.ZERO_ADDRESS, 3000, value, C.EMPTY_BYTES)
-    with brownie.reverts():
-        signAndExecute(msig, usrs, action)
-    with brownie.reverts():
-        signAndExecute(msig, usrs, action, {'value': value + 1})
