@@ -10,9 +10,9 @@ web3 = brownie.web3
 
 def test_success(msig, usr_ids):
     assert msig.nonce() == 0
-    assert msig.threshold() == C.THRESHOLD
-    assert msig.DOMAIN_SEPARATOR() == utils.encode_dom_sep(msig)
-    assert msig.allSigners() == usr_ids
+    assert msig.getThreshold() == C.THRESHOLD
+    assert msig.getDOMAIN_SEPARATOR() == utils.encode_dom_sep(msig)
+    assert msig.getAllSigners() == usr_ids
 
 def test_deploy_with_value(Minisig, deployer, usr_ids):
     value = 100

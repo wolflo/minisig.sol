@@ -14,19 +14,19 @@ contract Minisig {
     }
 
     // --- State ---
-    uint256 public nonce;
+    uint256 private _nonce;
 
     // --- Immutables and constants ---
-    address[] internal signers; // approved signers, immutable in huff impl.
-    uint8 public immutable threshold;   // minimum required signers
+    address[] private signers; // approved signers, immutable in huff impl.
+    uint8 private immutable threshold;   // minimum required signers
 
     // EIP712 stuff
-    bytes32 public immutable DOMAIN_SEPARATOR;
+    bytes32 private immutable DOMAIN_SEPARATOR;
     // keccak256("EIP712Domain(uint256 chainId,uint256 deployBlock,address verifyingContract)");
-    bytes32 internal constant DOMAIN_SEPARATOR_TYPEHASH = 0x0a684fcd4736a0673611bfe1e61ceb93fb09bcd288bc72c1155ebe13280ffeca;
+    bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH = 0x0a684fcd4736a0673611bfe1e61ceb93fb09bcd288bc72c1155ebe13280ffeca;
     // TODO: update exec typehash
     // keccak256("Execute(address target,uint8 callType,uint256 nonce,uint256 txGas,uint256 value,bytes data)");
-    bytes32 internal constant EXECUTE_TYPEHASH = 0x9c1370cbf5462da152553d1b9556f96a7eb4dfe28fbe07e763227834d409103a;
+    bytes32 private constant EXECUTE_TYPEHASH = 0x9c1370cbf5462da152553d1b9556f96a7eb4dfe28fbe07e763227834d409103a;
 
     // --- Fallback function ---
     receive () external payable {} // recieve ether only if calldata is empty
@@ -75,9 +75,9 @@ contract Minisig {
         require(_sigs.length >= uint256(threshold) * 65, "sigs-invalid-length");
 
         // update nonce
-        uint256 origNonce = nonce;
+        uint256 origNonce = _nonce;
         uint256 newNonce = origNonce + 1;
-        nonce = newNonce;
+        _nonce = newNonce;
 
         // signed message hash
         bytes32 digest = keccak256(abi.encodePacked(
@@ -137,9 +137,20 @@ contract Minisig {
         require(success, "call-failure");
     }
 
-    // return signers array
-    function allSigners() external view returns (address[] memory) {
+    // --- Nonce getter ---
+    function nonce() external view returns (uint256) {
+        return _nonce;
+    }
+
+    // --- Solidity-specific getters ---
+    // These getters are specific to the solidity implementation. In the huff
+    // implementation, this data is available on-chain via `codecopy()`
+    function getAllSigners() external view returns (address[] memory) {
         return signers;
     }
+    function getDOMAIN_SEPARATOR() external view returns (bytes32) {
+        return DOMAIN_SEPARATOR;
+    }
+    function getThreshold() external view returns (uint256) { return threshold; }
 
 }
